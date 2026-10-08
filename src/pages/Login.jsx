@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import api from "../api/axios";
+import AuthLayout from "../components/AuthLayout";
 
 function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,35 +19,30 @@ function Login() {
       localStorage.setItem("user", JSON.stringify(res.data));
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data || "Login failed");
+      const data = err.response?.data;
+      setError(typeof data === "string" ? data : "Login failed. Check your email and password.");
     }
   };
 
   return (
-    <div style={{ maxWidth: 400, margin: "50px auto" }}>
-      <h2>Login</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Log in to continue swapping skills."
+      footer={<>New here? <Link to="/register">Create an account</Link></>}
+    >
+      {error && <div className="alert alert-error">{error}</div>}
       <form onSubmit={handleSubmit}>
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        /><br /><br />
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          required
-        /><br /><br />
-        <button type="submit">Login</button>
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input id="email" name="email" type="email" value={form.email} onChange={handleChange} required />
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input id="password" name="password" type="password" value={form.password} onChange={handleChange} required />
+        </div>
+        <button className="btn btn-block btn-lg" type="submit">Log in</button>
       </form>
-      <p>Don't have an account? <Link to="/register">Register</Link></p>
-    </div>
+    </AuthLayout>
   );
 }
 

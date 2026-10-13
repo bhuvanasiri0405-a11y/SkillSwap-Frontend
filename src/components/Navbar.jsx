@@ -3,7 +3,12 @@ import Brand from "./Brand";
 
 function Navbar() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  let user = null;
+  try {
+    user = JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
+    localStorage.removeItem("user");
+  }
   const initial = user?.name?.[0]?.toUpperCase() || "?";
 
   const handleLogout = () => {
@@ -19,6 +24,7 @@ function Navbar() {
         <nav className="site-links">
           <NavLink to="/dashboard">Dashboard</NavLink>
           <NavLink to="/browse">Browse</NavLink>
+          {user?.role === "ADMIN" && <NavLink to="/admin">Admin</NavLink>}
           <span className="nav-avatar" title={user?.name}>{initial}</span>
           <button className="btn btn-ghost btn-sm" onClick={handleLogout}>Log out</button>
         </nav>

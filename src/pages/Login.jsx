@@ -17,7 +17,7 @@ function Login() {
       const res = await api.post("/auth/login", form);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data));
-      navigate("/dashboard");
+      navigate(res.data.role === "ADMIN" ? "/admin" : "/dashboard");
     } catch (err) {
       const data = err.response?.data;
       setError(typeof data === "string" ? data : "Login failed. Check your email and password.");

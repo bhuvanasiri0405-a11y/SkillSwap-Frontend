@@ -227,6 +227,7 @@ a { color: inherit; }
 /* ---------- Forms ---------- */
 .form-group { margin-bottom: 16px; }
 label { display: block; font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; }
+.field-error { margin-top: 5px; color: var(--danger); font-size: 0.86rem; }
 input, select {
   width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 10px;
   font: 500 1rem var(--body); background: var(--white); color: var(--ink);
@@ -257,6 +258,15 @@ input:focus, select:focus { outline: none; border-color: var(--learn); box-shado
 }
 .skill-name { font-weight: 700; }
 .skill-meta { color: var(--muted); font-size: 0.88rem; }
+.session-info { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.session-join { width: fit-content; }
+.session-form-grid { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 14px; }
+.swap-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 700px) {
+  .session-form-grid { grid-template-columns: 1fr; gap: 0; }
+  .skill-item { align-items: flex-start; flex-direction: column; }
+  .swap-actions { width: 100%; }
+}
 
 .badge { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
 .badge-teach { background: var(--teach-soft); color: var(--teach-ink); }
@@ -268,6 +278,15 @@ input:focus, select:focus { outline: none; border-color: var(--learn); box-shado
 .skill-card h4 { font-size: 1.2rem; }
 .owner { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.9rem; margin-top: auto; padding-top: 6px; }
 .owner .avatar { width: 28px; height: 28px; font-size: 0.78rem; }
+.provider-reviews { margin-top: 24px; }
+.review-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.review-summary > strong { font: 800 1.35rem var(--display); }
+.review-stars { display: inline-flex; gap: 2px; color: #b87500; font-size: 1.1rem; letter-spacing: 0.04em; }
+.public-review-list { margin-bottom: 18px; }
+.public-review { padding: 16px 0; border-top: 1px solid var(--line); }
+.public-review-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.review-rating-number { color: var(--muted); font: 500 0.8rem var(--body); letter-spacing: 0; margin-left: 6px; }
+.public-review-comment { margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .toolbar { display: flex; gap: 12px; margin-bottom: 22px; }
 .toolbar input { flex: 1; }
@@ -277,3 +296,31 @@ input:focus, select:focus { outline: none; border-color: var(--learn); box-shado
 .alert { padding: 12px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 0.92rem; }
 .alert-error { background: var(--danger-soft); color: var(--danger); font-weight: 500; }
 .empty { color: var(--muted); padding: 6px 0; }
+
+/* ---------- Admin dashboard ---------- */
+.admin-header, .admin-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.admin-header { margin-bottom: 30px; }
+.admin-section-title { font-size: 1.35rem; margin-bottom: 14px; }
+.admin-metric { border-top: 4px solid var(--learn); }
+.admin-metric h3 { color: var(--muted); font: 700 0.9rem var(--body); letter-spacing: 0; }
+.admin-metric p { margin-top: 8px; font: 800 2rem var(--display); }
+.admin-note { color: var(--muted); font-size: 0.88rem; margin-top: 12px; }
+.admin-toolbar select { width: 190px; }
+.admin-filter-row > input { min-width: 150px; }
+.admin-table { width: 100%; border-collapse: collapse; text-align: left; }
+.admin-table { min-width: 760px; }
+.admin-table th, .admin-table td { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.admin-table th { color: var(--ink-soft); background: #f5f7fa; font-size: 0.86rem; }
+.admin-table td { overflow-wrap: anywhere; }
+.admin-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; color: var(--muted); font-size: 0.9rem; }
+.admin-pagination > div { display: flex; gap: 8px; }
+.admin-row-actions { min-width: 260px; }
+.admin-row-actions .btn + .btn { margin-left: 6px; }
+.admin-moderated-note { display: inline-block; max-width: 280px; color: var(--muted); font-size: 0.85rem; }
+.btn:disabled { cursor: not-allowed; opacity: 0.55; transform: none; }
+@media (max-width: 650px) {
+  .admin-header { flex-direction: column; }
+  .admin-toolbar { flex-direction: column; }
+  .admin-toolbar select { width: 100%; }
+  .admin-pagination { align-items: flex-start; flex-direction: column; }
+}

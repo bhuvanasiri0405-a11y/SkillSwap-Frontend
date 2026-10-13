@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 function Browse() {
+  const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
 
   const [skills, setSkills] = useState([]);
@@ -12,6 +14,81 @@ function Browse() {
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(true);
   const [sendingRequest, setSendingRequest] = useState(null);
+  const [selectedReviewUserId, setSelectedReviewUserId] = useState(null);
+  const [publicReviews, setPublicReviews] = useState({});
+  const [reviewLoadingByUser, setReviewLoadingByUser] = useState({});
+  const [reviewErrorsByUser, setReviewErrorsByUser] = useState({});
+  const reviewRequests = useRef(new Map());
+  const authRedirected = useRef(false);
+
+  const loadUserReviews = async (userId, page = 0, append = false) => {
+    const id = Number(userId);
+    if (!Number.isSafeInteger(id) || id <= 0) return;
+    const requestKey = `${id}:${page}`;
+    if (reviewRequests.current.has(requestKey)) return reviewRequests.current.get(requestKey);
+
+    setReviewLoadingByUser((current) => ({ ...current, [id]: true }));
+    setReviewErrorsByUser((current) => ({ ...current, [id]: "" }));
+    const request = (async () => {
+      try {
+        const reviewsRequest = api.get(`/reviews/users/${id}`, {
+          params: { page, size: 10 }
+        });
+        const [reviewsResponse, summaryResponse] = await Promise.all([
+          reviewsRequest,
+          append ? Promise.resolve(null) : api.get(`/reviews/users/${id}/summary`)
+        ]);
+        const pageData = reviewsResponse.data;
+        if (!Array.isArray(pageData?.content)) {
+          throw new Error("The reviews response was not in the expected format.");
+        }
+        setPublicReviews((current) => {
+          const previous = current[id];
+          return {
+            ...current,
+            [id]: {
+              summary: append ? previous?.summary : summaryResponse.data,
+              content: append ? [...(previous?.content || []), ...pageData.content] : pageData.content,
+              page: pageData.page,
+              totalPages: pageData.totalPages,
+              totalElements: pageData.totalElements
+            }
+          };
+        });
+      } catch (err) {
+        const status = err.response?.status;
+        if (status === 401 && !authRedirected.current) {
+          authRedirected.current = true;
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          navigate("/login", { replace: true });
+        }
+        const message = status === 403
+          ? "You are not authorized to view these reviews."
+          : status === 404
+            ? "This user profile could not be found."
+            : err.message === "The reviews response was not in the expected format."
+              ? err.message
+              : "Could not load this user's reviews. Please try again.";
+        setReviewErrorsByUser((current) => ({ ...current, [id]: message }));
+      } finally {
+        reviewRequests.current.delete(requestKey);
+        setReviewLoadingByUser((current) => ({ ...current, [id]: false }));
+      }
+    })();
+    reviewRequests.current.set(requestKey, request);
+    return request;
+  };
+
+  const toggleUserReviews = (userId) => {
+    const id = Number(userId);
+    if (selectedReviewUserId === id) {
+      setSelectedReviewUserId(null);
+      return;
+    }
+    setSelectedReviewUserId(id);
+    if (!publicReviews[id] && !reviewLoadingByUser[id]) loadUserReviews(id);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -187,8 +264,18 @@ function Browse() {
                   {s.ownerName?.[0]?.toUpperCase()}
                 </span>
 
-                {isMySkill ? "You" : s.ownerName}
+                <span>{isMySkill ? "You" : s.ownerName}</span>
               </div>
+
+              <button
+                className="btn btn-ghost btn-sm"
+                type="button"
+                aria-expanded={selectedReviewUserId === Number(s.ownerId)}
+                aria-controls={`provider-reviews-${s.ownerId}`}
+                onClick={() => toggleUserReviews(s.ownerId)}
+              >
+                {selectedReviewUserId === Number(s.ownerId) ? "Hide reviews" : "View reviews"}
+              </button>
 
               {canRequest && (
                 <button
@@ -206,6 +293,76 @@ function Browse() {
           );
         })}
       </div>
+
+      {selectedReviewUserId !== null && (
+        <section className="card provider-reviews" id={`provider-reviews-${selectedReviewUserId}`} aria-labelledby="provider-reviews-title">
+          <h2 className="card-title" id="provider-reviews-title">
+            Reviews for {skills.find((skill) => Number(skill.ownerId) === selectedReviewUserId)?.ownerName || "this provider"}
+          </h2>
+          {reviewLoadingByUser[selectedReviewUserId] && !publicReviews[selectedReviewUserId] ? (
+            <p className="empty" aria-live="polite">Loading reviews…</p>
+          ) : reviewErrorsByUser[selectedReviewUserId] ? (
+            <div className="alert alert-error" role="alert">
+              <p>{reviewErrorsByUser[selectedReviewUserId]}</p>
+              <button className="btn btn-ghost btn-sm" type="button" onClick={() => loadUserReviews(selectedReviewUserId)}>
+                Try again
+              </button>
+            </div>
+          ) : publicReviews[selectedReviewUserId] ? (
+            <>
+              <div className="review-summary">
+                <strong>{Number(publicReviews[selectedReviewUserId].summary?.averageRating || 0).toFixed(1)} / 5</strong>
+                <span aria-label={`${Number(publicReviews[selectedReviewUserId].summary?.averageRating || 0).toFixed(1)} out of 5 stars`} className="review-stars">
+                  {Array.from({ length: 5 }, (_, index) => (
+                    <span key={index} aria-hidden="true">
+                      {index < Math.round(Number(publicReviews[selectedReviewUserId].summary?.averageRating || 0)) ? "★" : "☆"}
+                    </span>
+                  ))}
+                </span>
+                <span className="skill-meta">
+                  {publicReviews[selectedReviewUserId].summary?.totalReviewCount || 0} reviews
+                </span>
+              </div>
+
+              {publicReviews[selectedReviewUserId].content.length === 0 ? (
+                <p className="empty">This user has no reviews yet.</p>
+              ) : (
+                <div className="public-review-list">
+                  {publicReviews[selectedReviewUserId].content.map((review, index) => (
+                    <article className="public-review" key={`${review.reviewerDisplayName}-${review.reviewDate}-${index}`}>
+                      <div className="public-review-heading">
+                        <strong>{review.reviewerDisplayName}</strong>
+                        <time dateTime={review.reviewDate} className="skill-meta">
+                          {review.reviewDate ? new Date(review.reviewDate).toLocaleDateString() : "Date unavailable"}
+                        </time>
+                      </div>
+                      <div className="review-stars" aria-label={`${review.rating} out of 5 stars`}>
+                        {Array.from({ length: 5 }, (_, starIndex) => (
+                          <span key={starIndex} aria-hidden="true">{starIndex < Number(review.rating) ? "★" : "☆"}</span>
+                        ))}
+                        <span className="review-rating-number">{review.rating}/5</span>
+                      </div>
+                      {review.comment && <p className="public-review-comment">{review.comment}</p>}
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              {publicReviews[selectedReviewUserId].page + 1 < publicReviews[selectedReviewUserId].totalPages && (
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() => loadUserReviews(selectedReviewUserId, publicReviews[selectedReviewUserId].page + 1, true)}
+                  disabled={reviewLoadingByUser[selectedReviewUserId]}
+                >
+                  {reviewLoadingByUser[selectedReviewUserId] ? "Loading…" : "Load more reviews"}
+                </button>
+              )}
+              {reviewLoadingByUser[selectedReviewUserId] && <p className="skill-meta" aria-live="polite">Loading more reviews…</p>}
+            </>
+          ) : null}
+        </section>
+      )}
     </div>
   );
 }

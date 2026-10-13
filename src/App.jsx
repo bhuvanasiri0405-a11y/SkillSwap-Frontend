@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Browse from "./pages/Browse";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -14,7 +15,9 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
+        <Route element={<ProtectedRoute requiredRole="ADMIN" />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+        </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<Dashboard />} />
@@ -24,6 +27,7 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
+
 }
 
 export default App;
